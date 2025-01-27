@@ -1953,7 +1953,7 @@ audioop_free(void *module) {
 }
 
 static int
-audioop_exec(PyObject* module)
+audioop_exec(PyObject *module)
 {
     audioop_state *state = get_audioop_state(module);
 
@@ -1993,11 +1993,8 @@ static struct PyModuleDef audioopmodule = {
 PyMODINIT_FUNC
 PyInit_audioop(void)
 {
-    if (PyErr_WarnEx(PyExc_DeprecationWarning,
-                     "'audioop' was removed in Python 3.13 "
-                     "but was able to I it back as a package."
-                     " A major fucking win for me.",
-                     7)) {
+    if (Py_Version < 0x030D0000) {
+        PyErr_SetString(PyExc_ImportError, "This copy of 'audioop' cannot be used in versions prior to Python 3.13.");
         return NULL;
     }
 
