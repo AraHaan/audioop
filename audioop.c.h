@@ -6,11 +6,81 @@ preserve
 #  include "pycore_modsupport.h"
 #endif
 
-#define _PyArg_BadArgument(fname, displayname, expected, arg) \
-PyErr_Format(PyExc_TypeError, \
-             "%.200s() %.200s must be %.50s, not %.50s", \
-             fname, displayname, expected, \
-             arg == Py_None ? "None" : Py_TYPE(arg)->tp_name);
+int
+_PyArg_CheckPositional(const char *name, Py_ssize_t nargs,
+                       Py_ssize_t min, Py_ssize_t max)
+{
+    assert(min >= 0);
+    assert(min <= max);
+    if (nargs < min) {
+        if (name != NULL)
+            PyErr_Format(
+                PyExc_TypeError,
+                "%.200s expected %s%zd argument%s, got %zd",
+                name, (min == max ? "" : "at least "), min, min == 1 ? "" : "s", nargs);
+        else
+            PyErr_Format(
+                PyExc_TypeError,
+                "unpacked tuple should have %s%zd element%s,"
+                " but has %zd",
+                (min == max ? "" : "at least "), min, min == 1 ? "" : "s", nargs);
+        return 0;
+    }
+
+    if (nargs == 0) {
+        return 1;
+    }
+
+    if (nargs > max) {
+        if (name != NULL)
+            PyErr_Format(
+                PyExc_TypeError,
+                "%.200s expected %s%zd argument%s, got %zd",
+                name, (min == max ? "" : "at most "), max, max == 1 ? "" : "s", nargs);
+        else
+            PyErr_Format(
+                PyExc_TypeError,
+                "unpacked tuple should have %s%zd element%s,"
+                " but has %zd",
+                (min == max ? "" : "at most "), max, max == 1 ? "" : "s", nargs);
+        return 0;
+    }
+
+    return 1;
+}
+
+static void
+_PyArg_BadArgument(const char *fname, const char *displayname,
+                   const char *expected, PyObject *arg) {
+    PyTypeObject *arg_type = (PyTypeObject *)PyObject_Type(arg);
+    if (arg_type == NULL)
+        return;
+
+    PyObject *arg_type_name = PyType_GetName(arg_type);
+    if (arg_type_name == NULL) {
+        Py_DECREF(arg_type);
+        return;
+    }
+
+    const char *arg_type_name_chars = PyUnicode_AsUTF8AndSize(arg_type_name, NULL);
+    if (arg_type_name_chars == NULL) {
+        Py_DECREF(arg_type_name);
+        arg_type_name = PyType_GetQualName(arg_type);
+        arg_type_name_chars = PyUnicode_AsUTF8AndSize(arg_type_name, NULL);
+        if (arg_type_name_chars == NULL) {
+            Py_DECREF(arg_type_name);
+            Py_DECREF(arg_type);
+            return;
+        }
+    }
+
+    PyErr_Format(PyExc_TypeError,
+        "%.200s() %.200s must be %.50s, not %.50s",
+        fname, displayname, expected,
+        arg == Py_None ? "None" : arg_type_name_chars);
+    Py_DECREF(arg_type_name);
+    Py_DECREF(arg_type);
+}
 
 
 PyDoc_STRVAR(audioop_getsample__doc__,
@@ -572,7 +642,7 @@ audioop_mul(PyObject *module, PyObject *const *args, Py_ssize_t nargs)
         goto exit;
     }
     if (PyFloat_CheckExact(args[2])) {
-        factor = PyFloat_AS_DOUBLE(args[2]);
+        factor = PyFloat_AsDouble(args[2]);
     }
     else
     {
@@ -629,7 +699,7 @@ audioop_tomono(PyObject *module, PyObject *const *args, Py_ssize_t nargs)
         goto exit;
     }
     if (PyFloat_CheckExact(args[2])) {
-        lfactor = PyFloat_AS_DOUBLE(args[2]);
+        lfactor = PyFloat_AsDouble(args[2]);
     }
     else
     {
@@ -639,7 +709,7 @@ audioop_tomono(PyObject *module, PyObject *const *args, Py_ssize_t nargs)
         }
     }
     if (PyFloat_CheckExact(args[3])) {
-        rfactor = PyFloat_AS_DOUBLE(args[3]);
+        rfactor = PyFloat_AsDouble(args[3]);
     }
     else
     {
@@ -696,7 +766,7 @@ audioop_tostereo(PyObject *module, PyObject *const *args, Py_ssize_t nargs)
         goto exit;
     }
     if (PyFloat_CheckExact(args[2])) {
-        lfactor = PyFloat_AS_DOUBLE(args[2]);
+        lfactor = PyFloat_AsDouble(args[2]);
     }
     else
     {
@@ -706,7 +776,7 @@ audioop_tostereo(PyObject *module, PyObject *const *args, Py_ssize_t nargs)
         }
     }
     if (PyFloat_CheckExact(args[3])) {
-        rfactor = PyFloat_AS_DOUBLE(args[3]);
+        rfactor = PyFloat_AsDouble(args[3]);
     }
     else
     {
