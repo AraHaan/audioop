@@ -1,0 +1,55 @@
+name: Python (build & publish release)
+
+on:
+  push:
+    # only run when stable release tags are made, when prerelease or rc tags are made ignore them.
+    tags:
+    - '*'
+    - '!*-preview.*'
+    - '!*-rc.*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@main
+
+    - name: Install Python 3.13
+      uses: actions/setup-python@main
+      with:
+        python-version: '3.13'
+
+    - name: Build sdist and wheel.
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install --upgrade build wheel
+        python -m build
+      shell: pwsh
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@main
+      with:
+        name: dist-${{ runner.os }}
+        path: dist/*
+
+  create_release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@main
+      with:
+        pattern: dist-*
+        path: dist/
+        merge-multiple: true
+
+    - uses: ncipollo/release-action@main
+      with:
+        artifacts: "dist/*.whl,dist/*.tar.gz"
+        token: ${{ secrets.GITHUB_TOKEN }}
