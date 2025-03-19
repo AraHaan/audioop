@@ -1,6 +1,10 @@
 #ifndef AUDIOOP_IMPL_H
 #define AUDIOOP_IMPL_H
 
+#ifndef MS_WINDOWS
+#include <string.h>
+#endif
+
 #ifndef Py_SETREF
 #define Py_SETREF(dst, src) \
     do { \
