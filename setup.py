@@ -13,10 +13,20 @@ def cleanup():
     [shutil.rmtree(dir) for dir in dirs if dir.exists() and dir.is_dir()]
 
 
-Py_GIL_DISABLED = sysconfig.get_config_var("Py_GIL_DISABLED")
-options = {}
-if not Py_GIL_DISABLED:
-    options["bdist_wheel"] = {"py_limited_api": "cp313"}
+def is_gil_disabled() -> (bool, dict):
+    options = {}
+    Py_GIL_DISABLED = bool(sysconfig.get_config_var("Py_GIL_DISABLED"))
+    if not Py_GIL_DISABLED:
+        options["bdist_wheel"] = {"py_limited_api": "cp313"}
+
+    return (Py_GIL_DISABLED, options)
+
+
+def define_macros(Py_GIL_DISABLED: bool) -> list:
+    return [("Py_LIMITED_API", "0x030D0000")] if not Py_GIL_DISABLED else [("Py_GIL_DISABLED", str(int(Py_GIL_DISABLED)))]
+
+
+Py_GIL_DISABLED, options = is_gil_disabled()
 
 setup(
     name="audioop",
@@ -26,7 +36,7 @@ setup(
         Extension(
             name='audioop',
             sources=["audioop.c"],
-            define_macros=[("Py_LIMITED_API", "0x030D0000")] if not Py_GIL_DISABLED else [],
+            define_macros=define_macros(Py_GIL_DISABLED),
             py_limited_api=not Py_GIL_DISABLED)],
     options=options,
     include_package_data=True

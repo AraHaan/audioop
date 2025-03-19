@@ -111,7 +111,9 @@ audioop_exec(PyObject *module)
 static PyModuleDef_Slot audioop_slots[] = {
     {Py_mod_exec, audioop_exec},
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+#ifdef Py_GIL_DISABLED
     {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
     {0, NULL}
 };
 
