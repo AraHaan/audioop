@@ -29,6 +29,10 @@
 
 /* audioopmodule - Module to detect peak values in arrays */
 
+#if PY_VERSION_HEX >= 0x030D0000
+#error "Only Python 3.13+ can be used to build this C extension module."
+#endif
+
 #define PY_SSIZE_T_CLEAN
 
 #include <Python.h>
@@ -111,9 +115,7 @@ audioop_exec(PyObject *module)
 static PyModuleDef_Slot audioop_slots[] = {
     {Py_mod_exec, audioop_exec},
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
-#ifdef Py_GIL_DISABLED
     {Py_mod_gil, Py_MOD_GIL_NOT_USED},
-#endif
     {0, NULL}
 };
 
