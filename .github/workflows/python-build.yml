@@ -11,6 +11,9 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      # Only build on CPython 3.13
+      CIBW_BUILD: cp313-*
     steps:
     - uses: actions/checkout@main
 
@@ -19,11 +22,12 @@ jobs:
       with:
         python-version: '3.13'
 
-    - name: Build sdist and wheel.
+    - name: Build sdist and wheels.
       run: |
         python -m pip install --upgrade pip
-        python -m pip install --upgrade build wheel
-        python -m build
+        python -m pip install --upgrade build wheel cibuildwheel
+        python -m cibuildwheel --archs all --output-dir dist
+        python -m build --sdist
       shell: pwsh
 
     - name: Upload artifacts
