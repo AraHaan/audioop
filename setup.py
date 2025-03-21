@@ -29,8 +29,6 @@ def define_macros(Py_GIL_DISABLED: bool) -> list:
 Py_GIL_DISABLED, options = is_gil_disabled()
 
 setup(
-    name="audioop",
-    version='3.12.5',
     # Describes how to build the actual extension module from C source files.
     ext_modules=[
         Extension(
