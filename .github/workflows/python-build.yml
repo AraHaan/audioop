@@ -1,37 +1,41 @@
-name: Python (build)
+name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+  pull_request:
+  
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    env:
-      # Only build on CPython 3.13
-      CIBW_BUILD: cp313-*
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
     steps:
-    - uses: actions/checkout@main
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-    - name: Install Python 3.13
-      uses: actions/setup-python@main
-      with:
-        python-version: '3.13'
+      - name: Build wheels
+        uses: pypa/cibuildwheel@ee63bf16da6cddfb925f542f2c7b59ad50e93969 # v2.22.0
 
-    - name: Build sdist and wheels.
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install --upgrade build wheel cibuildwheel
-        python -m cibuildwheel --archs all --output-dir dist
-        python -m build --sdist
-      shell: pwsh
+      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@main
-      with:
-        name: dist-${{ runner.os }}
-        path: dist/*
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Build sdist
+        run: pipx run build --sdist
+
+      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: cibw-sdist
+          path: dist/*.tar.gz
